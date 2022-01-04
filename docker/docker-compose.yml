@@ -1,0 +1,13 @@
+version: "2"
+
+services:
+  awsl-blob:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    image: registry.cn-beijing.aliyuncs.com/dreamhunter/awsl:blob
+    container_name: awsl-blob
+    environment:
+      ENV_FILE: .env
+    volumes:
+      - ../.env.local:.env

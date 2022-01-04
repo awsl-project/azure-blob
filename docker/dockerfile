@@ -1,0 +1,7 @@
+FROM python:3.9-slim
+
+COPY . /app
+WORKDIR /app
+RUN python3 -m pip install -r /app/requirement.txt
+RUN rm -rf /root/.cache
+ENTRYPOINT ["celery", "-A", "main", "worker", "--beat", "--loglevel=INFO"]
