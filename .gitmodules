@@ -1,0 +1,3 @@
+[submodule "awsl_blob/models"]
+	path = awsl_blob/models
+	url = https://github.com/awsl-project/sqlalchemy-models
