@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/start.py",
             "env": {
-                "ENV_FILE": ".env"
+                "ENV_FILE": ".env.local"
             },
             "console": "integratedTerminal"
         }
