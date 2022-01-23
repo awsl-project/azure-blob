@@ -28,7 +28,7 @@ def send_photos(ch, method, properties, body) -> None:
                 copy_from_url(blob_service_client, pic_size, blob)
         update_db_status(blob_groups)
         _logger.info("upload to azure blob %s", pic_ids)
-        # ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
         count = failed_key.get(hash_body, 0)
         failed_key.put(hash_body, count+1)
