@@ -26,7 +26,7 @@ def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: B
     blob.url = blob_client.url
     time.sleep(10)
 
-    for _ in range(5):
+    for _ in range(10):
         props = blob_client.get_blob_properties()
         status = props.copy.status
         if status == "success":
