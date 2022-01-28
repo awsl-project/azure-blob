@@ -81,10 +81,13 @@ def get_all_pic_to_upload() -> List[BlobGroup]:
     session = DBSession()
     res = []
     try:
-        blobs = session.query(AwslBlob).all()
-        pics = session.query(Pic).filter(
-            Pic.pic_id.notin_([blob.pic_id for blob in blobs])
-        ).order_by(Pic.awsl_id.desc()).limit(5000).all()
+        pics = session.query(Pic).join(
+            AwslBlob, Pic.pic_id == AwslBlob.pic_id, isouter=True
+        ).filter(
+            AwslBlob.pic_id.is_(None)
+        ).filter(
+            Pic.deleted.isnot(True)
+        ).order_by(Pic.awsl_id.desc()).limit(500).all()
         for pic in pics:
             pic_info = json.loads(pic.pic_info)
             res.append(
@@ -118,6 +121,18 @@ def update_db_status(blob_groups: List[BlobGroup]):
                 pic_id=blob_group.id,
                 pic_info=blob_group.blobs.json(),
             ))
+        session.commit()
+    finally:
+        session.close()
+
+
+def delete_pic(blob_group: BlobGroup):
+    session = DBSession()
+    try:
+        for picobj in session.query(Pic).filter(
+            Pic.pic_id == blob_group.id
+        ).all():
+            picobj.deleted = True
         session.commit()
     finally:
         session.close()
