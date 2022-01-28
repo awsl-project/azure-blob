@@ -24,7 +24,7 @@ def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: B
     )
     blob_client.start_copy_from_url(blob.url)
     blob.url = blob_client.url
-    time.sleep(10)
+    # time.sleep(10)
 
     for _ in range(50):
         props = blob_client.get_blob_properties()
@@ -53,6 +53,38 @@ def get_pic_to_upload(pic_ids: List[int]) -> List[BlobGroup]:
         pics = session.query(Pic).filter(
             Pic.pic_id.in_(pic_ids)
         ).all()
+        for pic in pics:
+            pic_info = json.loads(pic.pic_info)
+            res.append(
+                BlobGroup(
+                    id=pic.pic_id,
+                    awsl_id=pic.awsl_id,
+                    blobs=Blobs(blobs={
+                        pic_type: Blob(
+                            pic_id=pic.pic_id,
+                            url=pic_data["url"],
+                            width=pic_data["width"],
+                            height=pic_data["height"]
+                        )
+                        for pic_type, pic_data in pic_info.items()
+                        if isinstance(pic_data, dict) and "url" in pic_data
+                    })
+                )
+            )
+        _logger.info("get_pic_to_upload: count = %s", len(res))
+    finally:
+        session.close()
+    return res
+
+
+def get_all_pic_to_upload() -> List[BlobGroup]:
+    session = DBSession()
+    res = []
+    try:
+        blobs = session.query(AwslBlob).all()
+        pics = session.query(Pic).filter(
+            Pic.pic_id.notin_([blob.pic_id for blob in blobs])
+        ).order_by(Pic.awsl_id.desc()).limit(5000).all()
         for pic in pics:
             pic_info = json.loads(pic.pic_info)
             res.append(

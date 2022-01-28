@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import pika
 import time
 import json
@@ -9,7 +10,7 @@ from azure.storage.blob import BlobServiceClient
 from awsl_blob.tools import copy_from_url
 
 from .config import settings
-from .tools import get_pic_to_upload, update_db_status
+from .tools import get_all_pic_to_upload, get_pic_to_upload, update_db_status
 
 _logger = logging.getLogger(__name__)
 
@@ -42,3 +43,19 @@ def start_consuming():
         channel.start_consuming()
     finally:
         connection.close()
+
+
+def migration():
+    blob_service_client = BlobServiceClient.from_connection_string(
+        settings.connection_string)
+    blob_groups = get_all_pic_to_upload()
+    with ThreadPoolExecutor(max_workers=1000) as executor:
+        for blob_group in blob_groups:
+            executor.submit(upload, blob_service_client, blob_group)
+
+
+def upload(blob_service_client, blob_group):
+    for pic_size, blob in blob_group.blobs.blobs.items():
+        copy_from_url(blob_service_client, pic_size, blob)
+    update_db_status([blob_group])
+    _logger.info("upload to azure blob %s", blob_group)
