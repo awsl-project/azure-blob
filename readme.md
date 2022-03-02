@@ -1,3 +1,3 @@
 # Awsl Azure Blob
 
-upload pic to Azure Blob
+Upload pic to Azure Blob
