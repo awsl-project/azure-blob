@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     blob_container: str
     broker: str
     db_url: str
-    queue: str
     max_workers: int
     migration_limit: int
 
