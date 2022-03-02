@@ -12,7 +12,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-app = Celery('awsl-tasks', broker=settings.broker)
+app = Celery('blob-tasks', broker=settings.broker)
 
 
 @app.task
@@ -21,7 +21,7 @@ def start_blob():
 
 
 app.conf.beat_schedule = {
-    "awsl-tasks": {
+    "blob-tasks": {
         "task": "blob_start.start_blob",
         "schedule": crontab(hour="*", minute=1)
     }
