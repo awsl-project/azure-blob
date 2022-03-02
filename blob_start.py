@@ -4,7 +4,8 @@ from celery import Celery
 from celery.schedules import crontab
 
 
-from awsl_blob.config import settings, migration
+from awsl_blob.config import settings
+from awsl_blob.awsl_blob import migration
 
 logging.basicConfig(
     format="%(asctime)s: %(levelname)s: %(name)s: %(message)s",
