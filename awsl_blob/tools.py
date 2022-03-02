@@ -46,37 +46,6 @@ def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: B
     raise Exception("abort_copy: blob = %s" % blob)
 
 
-def get_pic_to_upload(pic_ids: List[int]) -> List[BlobGroup]:
-    session = DBSession()
-    res = []
-    try:
-        pics = session.query(Pic).filter(
-            Pic.pic_id.in_(pic_ids)
-        ).all()
-        for pic in pics:
-            pic_info = json.loads(pic.pic_info)
-            res.append(
-                BlobGroup(
-                    id=pic.pic_id,
-                    awsl_id=pic.awsl_id,
-                    blobs=Blobs(blobs={
-                        pic_type: Blob(
-                            pic_id=pic.pic_id,
-                            url=pic_data["url"],
-                            width=pic_data["width"],
-                            height=pic_data["height"]
-                        )
-                        for pic_type, pic_data in pic_info.items()
-                        if isinstance(pic_data, dict) and "url" in pic_data
-                    })
-                )
-            )
-        _logger.info("get_pic_to_upload: count = %s", len(res))
-    finally:
-        session.close()
-    return res
-
-
 def get_all_pic_to_upload() -> List[BlobGroup]:
     session = DBSession()
     res = []
@@ -87,7 +56,7 @@ def get_all_pic_to_upload() -> List[BlobGroup]:
             AwslBlob.pic_id.is_(None)
         ).filter(
             Pic.deleted.isnot(True)
-        ).order_by(Pic.awsl_id.desc()).limit(500).all()
+        ).order_by(Pic.awsl_id.desc()).limit(settings.migration_limit).all()
         for pic in pics:
             pic_info = json.loads(pic.pic_info)
             res.append(

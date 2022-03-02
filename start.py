@@ -7,7 +7,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# start_consuming()\
 
 _logger = logging.getLogger(__name__)
 
