@@ -13,18 +13,16 @@ from .models.pydantic_models import Blob, BlobGroup, Blobs
 _logger = logging.getLogger(__name__)
 engine = create_engine(settings.db_url, pool_size=100)
 DBSession = sessionmaker(bind=engine)
+PIC_TYPES = ["large", "mw2000", "original"]
 
 
 def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: Blob) -> bool:
-    # Create the container
-    # container_client = blob_service_client.create_container("mw2000")
-
     blob_client = blob_service_client.get_blob_client(
         container=settings.blob_container, blob="/".join([pic_size, blob.url.split("/")[-1]])
     )
     blob_client.start_copy_from_url(blob.url)
     blob.url = blob_client.url
-    time.sleep(10)
+    time.sleep(1)
 
     for _ in range(50):
         props = blob_client.get_blob_properties()
@@ -46,13 +44,17 @@ def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: B
     raise Exception("abort_copy: blob = %s" % blob)
 
 
-def get_pic_to_upload(pic_ids: List[int]) -> List[BlobGroup]:
+def get_all_pic_to_upload() -> List[BlobGroup]:
     session = DBSession()
     res = []
     try:
-        pics = session.query(Pic).filter(
-            Pic.pic_id.in_(pic_ids)
-        ).all()
+        pics = session.query(Pic).join(
+            AwslBlob, Pic.pic_id == AwslBlob.pic_id, isouter=True
+        ).filter(
+            AwslBlob.pic_id.is_(None)
+        ).filter(
+            Pic.deleted.isnot(True)
+        ).order_by(Pic.awsl_id.desc()).limit(settings.migration_limit).all()
         for pic in pics:
             pic_info = json.loads(pic.pic_info)
             res.append(
@@ -67,7 +69,7 @@ def get_pic_to_upload(pic_ids: List[int]) -> List[BlobGroup]:
                             height=pic_data["height"]
                         )
                         for pic_type, pic_data in pic_info.items()
-                        if isinstance(pic_data, dict) and "url" in pic_data
+                        if pic_type in PIC_TYPES and isinstance(pic_data, dict) and "url" in pic_data
                     })
                 )
             )
@@ -86,6 +88,18 @@ def update_db_status(blob_groups: List[BlobGroup]):
                 pic_id=blob_group.id,
                 pic_info=blob_group.blobs.json(),
             ))
+        session.commit()
+    finally:
+        session.close()
+
+
+def delete_pic(blob_group: BlobGroup):
+    session = DBSession()
+    try:
+        for picobj in session.query(Pic).filter(
+            Pic.pic_id == blob_group.id
+        ).all():
+            picobj.deleted = True
         session.commit()
     finally:
         session.close()
