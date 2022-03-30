@@ -4,4 +4,4 @@ COPY . /app
 WORKDIR /app
 RUN python3 -m pip install -r /app/requirements.txt
 RUN rm -rf /root/.cache
-ENTRYPOINT ["celery", "-A", "blob_start", "worker", "--beat", "--loglevel=INFO"]
+ENTRYPOINT ["python3", "start.py"]

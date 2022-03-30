@@ -8,10 +8,4 @@ logging.basicConfig(
 )
 
 
-_logger = logging.getLogger(__name__)
-
-while True:
-    try:
-        migration()
-    except Exception as e:
-        _logger.exception(e)
+migration()

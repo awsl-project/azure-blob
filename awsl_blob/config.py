@@ -6,7 +6,6 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     connection_string: str
     blob_container: str
-    broker: str
     db_url: str
     max_workers: int
     migration_limit: int
