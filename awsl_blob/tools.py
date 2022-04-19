@@ -13,7 +13,7 @@ from .models.pydantic_models import Blob, BlobGroup, Blobs
 _logger = logging.getLogger(__name__)
 engine = create_engine(settings.db_url, pool_size=100)
 DBSession = sessionmaker(bind=engine)
-PIC_TYPES = ["large", "mw2000", "original"]
+PIC_TYPES = ["large", "original"]
 
 
 def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: Blob) -> bool:
