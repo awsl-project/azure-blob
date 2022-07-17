@@ -1,8 +1,10 @@
+from datetime import datetime, timedelta
 import json
 import logging
 import time
 from typing import List
 from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceNotFoundError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -18,7 +20,8 @@ PIC_TYPES = ["large", "original"]
 
 def copy_from_url(blob_service_client: BlobServiceClient, pic_size: str, blob: Blob) -> bool:
     blob_client = blob_service_client.get_blob_client(
-        container=settings.blob_container, blob="/".join([pic_size, blob.url.split("/")[-1]])
+        container=settings.blob_container, blob="/".join(
+            [pic_size, blob.url.split("/")[-1]])
     )
     blob_client.start_copy_from_url(blob.url)
     blob.url = blob_client.url
@@ -103,3 +106,42 @@ def delete_pic(blob_group: BlobGroup):
         session.commit()
     finally:
         session.close()
+
+
+def get_all_pic_to_delete() -> List[Blobs]:
+    session = DBSession()
+    res = []
+    try:
+        awsl_blobs = session.query(AwslBlob).filter(
+            AwslBlob.create_date < (
+                datetime.now() - timedelta(days=settings.delete_after_days))
+        ).limit(settings.delete_limit).all()
+        pic_ids = [awsl_blob.pic_id for awsl_blob in awsl_blobs]
+        res = [
+            Blobs.parse_raw(awsl_blob.pic_info)
+            for awsl_blob in awsl_blobs
+        ]
+        for picobj in session.query(Pic).filter(
+            Pic.pic_id.in_(pic_ids)
+        ).all():
+            picobj.deleted = True
+        for blob in awsl_blobs:
+            session.delete(blob)
+        session.commit()
+        _logger.info("get_all_pic_to_delete: count = %s", len(res))
+    finally:
+        session.close()
+    return res
+
+
+def delete_azure_blob(blob_service_client: BlobServiceClient, pic_size: str, blob: Blob) -> bool:
+    if pic_size not in PIC_TYPES:
+        return True
+    blob_client = blob_service_client.get_blob_client(
+        container=settings.blob_container, blob="/".join(
+            [pic_size, blob.url.split("/")[-1]])
+    )
+    try:
+        blob_client.delete_blob()
+    except ResourceNotFoundError:
+        return True
