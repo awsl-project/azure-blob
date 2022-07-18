@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     db_url: str
     max_workers: int
     migration_limit: int
+    delete_after_days: int
+    delete_limit: int
 
     class Config:
         env_file = os.environ.get("ENV_FILE", ".env")

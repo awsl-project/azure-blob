@@ -7,7 +7,7 @@ from azure.core.exceptions import ResourceNotFoundError
 from awsl_blob.tools import copy_from_url
 
 from .config import settings
-from .tools import delete_pic, get_all_pic_to_upload, update_db_status
+from .tools import delete_azure_blob, delete_pic, get_all_pic_to_delete, get_all_pic_to_upload, update_db_status
 
 _logger = logging.getLogger(__name__)
 
@@ -19,6 +19,16 @@ def migration():
     with ThreadPoolExecutor(max_workers=settings.max_workers) as executor:
         for blob_group in blob_groups:
             executor.submit(upload, blob_service_client, blob_group)
+
+
+def cleanup():
+    blob_service_client = BlobServiceClient.from_connection_string(
+        settings.connection_string)
+    blobs_list = get_all_pic_to_delete()
+    for blobs in blobs_list:
+        for pic_type, blob in blobs.blobs.items():
+            delete_azure_blob(blob_service_client, pic_type, blob)
+    _logger.info("delete_azure_blobs")
 
 
 def upload(blob_service_client, blob_group):
