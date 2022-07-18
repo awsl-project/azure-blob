@@ -103,6 +103,7 @@ def delete_pic(blob_group: BlobGroup):
             Pic.pic_id == blob_group.id
         ).all():
             picobj.deleted = True
+            picobj.cleaned = True
         session.commit()
     finally:
         session.close()
